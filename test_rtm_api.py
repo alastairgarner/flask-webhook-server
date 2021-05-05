@@ -66,6 +66,7 @@ class RtmApi(object):
         data = {
             "method": method,
             **self.BASE_HEADER,
+            "timeline": self.timeline,
             **params
         }
         data.update({"api_sig": self._sign_request(data)})
@@ -152,9 +153,51 @@ class RtmApi(object):
         """docstring"""
 
         rsp = self.get('rtm.timelines.create', **kwargs)
-        self.timeline = rsp.json()['rsp']['timeline']
+        self.timeline = rsp['rsp']['timeline']
 
         return self.timeline
+
+
+class RtmTask(object):
+
+    _fields = {
+        "series_id": 'id',
+        'created': 'created',
+        'modified': 'modified',
+        'name': 'name',
+        'url': 'url',
+        'tags': 'tags',
+        'participants': 'participants',
+        'notes': 'notes',
+    }
+
+    _task_fields = {
+        'id': 'id',
+        'due': 'due',
+        'added': 'added',
+        'completed': 'completed',
+        "deleted": "deleted",
+        "priority": "priority",
+        "postponed": "postponed",
+        "estimate": "estimate",
+    }
+
+    def __init__(self, task_dict) -> None:
+
+        for attr, key in self._fields.items():
+            val = None
+            if key in task_dict.keys():
+                val = task_dict[key]
+
+            setattr(self, attr, val)
+
+        task_props = task_dict['task'][0]
+        for attr, key in self._task_fields.items():
+            val = None
+            if key in task_props.keys():
+                val = task_props[key]
+
+            setattr(self, attr, val)
 
 
 LOCAL_ENVS = './.env'
@@ -170,7 +213,18 @@ if res.status_code != 200:
 res = rtm.create_timeline()
 res['rsp']['timeline']
 
-rtm.post("rtm.tasks.add", )
+data = {
+    "name": "Cuddle Kat !1 ^today",
+    "parse": "1"
+}
+res = rtm.post("rtm.tasks.add", data)
 
 
 task_list = rtm.get('rtm.tasks.getList')
+d = task_list['rsp']['tasks']['list'][0]['taskseries'][0]
+
+task = RtmTask(d)
+d['task']
+
+task.id
+task.tags
