@@ -11,12 +11,14 @@ import logging
 from logging import Logger
 
 from rtmcopy import Rtm
+from flask_webhook_server import Bas
 
 logger = logging.getLogger()
 
-app = Flask(__name__)
+# app = Flask(__name__)
 
 # NOTE for API call to work, need to pass in the api_key and auth_token
+# https://uk.godaddy.com/engineering/2018/12/20/python-metaclasses/
 
 
 class RtmTask(object):
@@ -118,7 +120,7 @@ class RtmTask(object):
         return ' '.join(smart_parts)
 
 
-class RtmApi(object):
+class RtmConnector(BaseConnector):
 
     AUTH_URL = "https://api.rememberthemilk.com/services/auth/"
     BASE_URL = "https://api.rememberthemilk.com/services/rest/"
@@ -175,7 +177,7 @@ class RtmApi(object):
         r = requests.post(self.BASE_URL, params=data)
         return (r.json() if json else r)
 
-    def check_token(self):
+    def check_auth(self):
         """docstring"""
 
         return self.post("rtm.auth.checkToken", json=False)
@@ -209,7 +211,7 @@ class RtmApi(object):
 
         return self.get("rtm.auth.getToken", params={"frob": frob}, json=False)
 
-    def authenticate_desktop(self):
+    def authenticate(self):
         """docstring"""
 
         frob = self.get_frob()
@@ -231,11 +233,11 @@ class RtmApi(object):
             raise Exception('Failed to get API token')
 
         self.TOKEN = rsp.json()['rsp']['auth']['token']
-        self._update_dotenv()
+        self.update_dotenv()
 
         return success
 
-    def _update_dotenv(self):
+    def update_dotenv(self):
         """docstring"""
 
         dotenv.set_key(self.env, "RTM_API_TOKEN", self.TOKEN)
@@ -258,6 +260,12 @@ class RtmApi(object):
 
         return self.timeline
 
+
+class RtmApi(RtmConnector):
+
+    def __init__(self, logger: Logger, env_file: str = './.env') -> None:
+        super().__init__(logger, env_file=env_file)
+
     def create_task(self, *args, **kwargs):
         task = RtmTask(*args, **kwargs)
         data = {
@@ -274,14 +282,14 @@ dotenv.load_dotenv(LOCAL_ENVS)
 logger = logging.getLogger()
 rtm = RtmApi(logger)
 
-res = rtm.check_token()
+res = rtm.check_auth()
 if res.status_code != 200:
-    success = rtm.authenticate_desktop()
+    success = rtm.authenticate()
 
 res = rtm.create_timeline()
 res
 
-task = rtm.create_task(name="Cuddle Kat", priority=1, due='today',
+task = rtm.create_task(name="Do work", priority=1, due='today',
                        tags=['work', 'home'], url='https://address.com', note='This is a long note pertaining to the thing I have to do')
 
 
