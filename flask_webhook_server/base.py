@@ -151,12 +151,15 @@ class BaseWebhook(AbstractWebhook):
         'tagged': []
     }
 
-    def __init__(self, app: Flask = None, endpoint: str = None, logger: Logger = None):
+    def __init__(self, app: Flask = None, logger: Logger = None) -> None:
         self.app = app
-        self.logger = app.logger
-        self.pipes: list = []
 
-        self.pipes.append(self.yeah_boi)
+        if not logger:
+            logger = app.logger
+        self.logger = logger
+
+        self.targets: dict = {**self.events}
+        self.events[None].append(self.yeah_boi)
 
     def hook(self, rule: str, **kwargs: Any) -> Callable:
         """
@@ -166,8 +169,9 @@ class BaseWebhook(AbstractWebhook):
         """
 
         def decorator(func: Callable) -> None:
-            # self.logger.info(f"{self.__name__}: '{rule}' endpoint hit")
-            self.pipes.append(func)
+            self.logger.info(f"{self.__name__}: Registered endpoint - {rule}")
+            for event in self.targets.keys():
+                self.targets[event].append(func)
 
             endpoint = kwargs.pop("endpoint", None)
             self.app.add_url_rule(rule=rule, endpoint=endpoint, view_func=self.resolve,
@@ -176,36 +180,37 @@ class BaseWebhook(AbstractWebhook):
 
         return decorator
 
-    def resolve(self, request: request = None):
+    def resolve(self, request: request = None) -> Response:
         """Callback from Flask"""
 
         event, packet = self.parse(request)
 
-        if event not in self.pipes.keys():
+        if event not in self.targets.keys():
             # raise Exception()
             return None
 
-        for pipe in self.events[event]:
-            pipe(packet)
-
         i = 0
-        for pipe in self.pipes:
+        for pipe in self.targets[event]:
             pipe()
             i += 1
 
-        print('Method called within the webhook class')
+        self.logger.info('Method called within the webhook class')
         return Response("This is final response", status=200)
 
-    def register(self, event: str = None, function: Callable = None):
+    def register(self, event: str = None, function: Callable = None) -> None:
         """Register a downstream function"""
-        self.pipes[event].append(function)
-        pass
 
-    def parse(self, request):
+        if event in self.targets.keys():
+            raise Exception()
+
+        self.targets[event].append(function)
+        return None
+
+    def parse(self, request) -> Union[str, str]:
 
         return None, None
 
     def yeah_boi(self):
-        print('Yeah Boi')
+        self.logger.info('Yeah Boi')
 
         return None

@@ -6,6 +6,8 @@ import dotenv
 app = Flask(__name__)
 base = BaseWebhook(app)
 
+app.logger.setLevel('DEBUG')
+
 
 @app.route('/')
 def hello_world():
@@ -15,8 +17,7 @@ def hello_world():
 
 @base.hook('/base')
 def on_base_post():
-    app.logger.info('Home base screen viewed')
-    print('Running the base response')
+    app.logger.info('Running the base response')
     return None
 
 
@@ -29,4 +30,4 @@ if __name__ == "__main__":
     # info, data = rtm.get(method="rtm.tasks.getList", format='json')
     # print(data)
 
-    app.run(host='0.0.0.0', debug=True)
+    app.run(host='0.0.0.0')
