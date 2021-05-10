@@ -1,3 +1,3 @@
-from .base import BaseWebhook
+from .base import BaseWebhook, AbstractConnector
 
-from .rtm import RtmWehook
+from .rtm import RtmWehook, RtmConnector

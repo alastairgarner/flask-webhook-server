@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Union, Any
+from typing import Callable, Optional, Union, Any, Tuple
 
-from flask import Flask, request, Response
+from flask import Flask, Request, Response
 from logging import Logger
 import collections
 
@@ -17,7 +17,7 @@ class AbstractPacket(ABC):
 
     @classmethod
     @abstractmethod
-    def from_response(self):
+    def from_response(self, response: dict):
         pass
 
 
@@ -138,7 +138,7 @@ class AbstractWebhook(ABC):
         pass
 
     @abstractmethod
-    def parse(self):
+    def parse(self, request: Request):
         pass
 
 
@@ -151,10 +151,10 @@ class BaseWebhook(AbstractWebhook):
         'tagged': []
     }
 
-    def __init__(self, app: Flask = None, logger: Logger = None) -> None:
+    def __init__(self, app: Flask, logger: Logger = None) -> None:
         self.app = app
 
-        if not logger:
+        if logger is None:
             logger = app.logger
         self.logger = logger
 
@@ -163,9 +163,7 @@ class BaseWebhook(AbstractWebhook):
 
     def hook(self, rule: str, **kwargs: Any) -> Callable:
         """
-        Registers a function as a hook. Multiple hooks can be registered for a given type, but the
-        order in which they are invoke is unspecified.
-        :param event_type: The event type this hook will be invoked for.
+        Registers a function as a hook. 
         """
 
         def decorator(func: Callable) -> None:
@@ -180,14 +178,13 @@ class BaseWebhook(AbstractWebhook):
 
         return decorator
 
-    def resolve(self, request: request = None) -> Response:
+    def resolve(self, request: Request = None) -> Response:
         """Callback from Flask"""
 
         event, packet = self.parse(request)
 
         if event not in self.targets.keys():
-            # raise Exception()
-            return None
+            raise Exception()
 
         i = 0
         for pipe in self.targets[event]:
@@ -200,13 +197,13 @@ class BaseWebhook(AbstractWebhook):
     def register(self, event: str = None, function: Callable = None) -> None:
         """Register a downstream function"""
 
-        if event in self.targets.keys():
+        if event not in self.targets.keys():
             raise Exception()
 
         self.targets[event].append(function)
         return None
 
-    def parse(self, request) -> Union[str, str]:
+    def parse(self, request: Request = None) -> Tuple[Optional[str], Optional[str]]:
 
         return None, None
 
