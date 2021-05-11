@@ -1,3 +1,4 @@
+from flask_webhook_server.base import BasePacket
 import os
 from typing import Optional, Union
 import requests
@@ -31,9 +32,10 @@ class RtmConnector(AbstractConnector):
         self.SECRET = os.environ["RTM_API_SECRET"]
         self.TOKEN = os.environ["RTM_API_TOKEN"]
 
+        self.logger = logger
         self.env = env_file
-        self.frob: str
-        self.timeline: str
+        self.frob: str = ""
+        self.timeline: str = ""
 
         self.BASE_HEADER = {
             "api_key": self.KEY,
@@ -41,7 +43,7 @@ class RtmConnector(AbstractConnector):
             "format": "json"
         }
 
-    def get(self, method: str = None, params: dict = {}, json=True) -> Union[Response, dict]:
+    def get(self, method: str = None, params: dict = {}, json: bool = True) -> Union[Response, dict]:
         """docstring"""
         data = {
             "method": method,
@@ -53,7 +55,7 @@ class RtmConnector(AbstractConnector):
         r = requests.get(self.BASE_URL, params=data)
         return (r.json() if json else r)
 
-    def post(self, method: str = None, params: dict = {}, json=True) -> Union[Response, dict]:
+    def post(self, method: str = None, params: dict = {}, json: bool = True) -> Union[Response, dict]:
         """docstring"""
         data = {
             "method": method,
@@ -75,11 +77,12 @@ class RtmConnector(AbstractConnector):
         """docstring"""
 
         rsp = self.get("rtm.auth.getFrob")
-        self.frob = rsp['rsp']['frob']
+        assert isinstance(rsp, dict)
 
+        self.frob = rsp['rsp']['frob']
         return self.frob
 
-    def get_authenication_url(self, frob: str, perms: str = "delete") -> str:
+    def get_authenication_url(self, frob: str, perms: str = "delete") -> Optional[str]:
         """docstring"""
         data = {
             "api_key": self.KEY,
@@ -98,7 +101,10 @@ class RtmConnector(AbstractConnector):
         if frob is None:
             frob = self.frob
 
-        return self.get("rtm.auth.getToken", params={"frob": frob}, json=False)
+        resp = self.get("rtm.auth.getToken", params={
+            "frob": frob}, json=False)
+        assert isinstance(resp, Response)
+        return resp
 
     def authenticate(self) -> bool:
         """docstring"""
@@ -129,7 +135,7 @@ class RtmConnector(AbstractConnector):
     def update_dotenv(self) -> None:
         """docstring"""
 
-        dotenv.set_key(self.env, "RTM_API_TOKEN", self.TOKEN)
+        dotenv.set_key(self.env, "RTM_API_TOKEN", self.TOKEN)  # type: ignore
         os.environ["RTM_API_TOKEN"] = self.TOKEN
 
     def _sign_request(self, params: dict) -> str:
@@ -145,15 +151,44 @@ class RtmConnector(AbstractConnector):
         """docstring"""
 
         rsp = self.get('rtm.timelines.create', **kwargs)
-        self.timeline = rsp['rsp']['timeline']
+        assert isinstance(rsp, dict)
 
+        self.timeline = rsp['rsp']['timeline']
         return self.timeline
 
 
 class RtmApi(RtmConnector):
 
-    def __init__(self, logger: Logger, env_file: str = './.env') -> None:
-        super().__init__(logger, env_file=env_file)
+    conversion = {
+        'name': 'name',
+        'tags': 'tags',
+        'priority': 'priority',
+        'location': 'location',
+        'url': 'url',
+        'note': 'notes',
+    }
+
+    _smart_symbols = {
+        'priority': '!',
+        'due': '^',
+        'start': '~',
+        'tags': '#',
+        'estimate': '=',
+        'location': '@',
+        'url': '',
+        'note': '//',
+    }
+
+    def __init__(self, app: Flask, logger: Logger, env_file: str = './.env') -> None:
+        super().__init__(logger=logger, env_file=env_file)
+
+        rsp = self.check_auth()
+        if rsp.status_code != 200:
+            success = self.authenticate()
+        else:
+            self.logger.info('RTM - token is good!')
+
+        _ = self.create_timeline()
 
     # def create_task(self, *args, **kwargs):
     #     task = RtmTask(*args, **kwargs)
@@ -167,6 +202,46 @@ class RtmApi(RtmConnector):
     def get_tasks(self) -> None:
         return None
 
+    def create_task(self) -> None:
+        self.logger.info('RTM - Created new task')
+
+        packet = BasePacket(name="Pick up some milk", tags=[
+                            "home", "weekend"], priority="1", url="")
+        assert packet.name
+
+        task = {}
+        for rtm_key, pkt_key in self.conversion.items():
+            task[rtm_key] = getattr(packet, pkt_key, None)
+
+        data = {
+            "name": self.create_smart_string(task),
+            "parse": "1"
+        }
+
+        return self.post("rtm.tasks.add", data)
+
+    def create_smart_string(self, data: dict) -> str:
+
+        if data is None:
+            self.logger.info("No data passed")
+            return None
+
+        assert data["name"]
+        smart_parts = [data['name']]
+
+        for attr, value in data.items():
+            symbol = self._smart_symbols.get(attr, None)
+            if not (value and symbol):
+                continue
+
+            if isinstance(value, list):
+                for item in value:
+                    smart_parts.append(symbol + item)
+            elif value:
+                smart_parts.append(symbol + value)
+
+        return ' '.join(smart_parts)
+
 
 class RtmWehook(BaseWebhook):
 
@@ -175,4 +250,4 @@ class RtmWehook(BaseWebhook):
     }
 
     def __init__(self, app: Flask, logger: Logger):
-        super().__init__(app, logger)
+        super().__init__(app=app, logger=logger)
