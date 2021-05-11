@@ -68,10 +68,12 @@ class RtmConnector(AbstractConnector):
         r = requests.post(self.BASE_URL, params=data)
         return (r.json() if json else r)
 
-    def check_auth(self) -> Union[Response, dict]:
+    def check_auth(self) -> Response:
         """docstring"""
 
-        return self.post("rtm.auth.checkToken", json=False)
+        rsp = self.post("rtm.auth.checkToken", json=False)
+        assert isinstance(rsp, Response)
+        return rsp
 
     def get_frob(self) -> str:
         """docstring"""
@@ -190,19 +192,10 @@ class RtmApi(RtmConnector):
 
         _ = self.create_timeline()
 
-    # def create_task(self, *args, **kwargs):
-    #     task = RtmTask(*args, **kwargs)
-    #     data = {
-    #         "name": task.create_smart_string(),
-    #         "parse": "1"
-    #     }
-
-    #     self.post("rtm.tasks.add", data)
-
     def get_tasks(self) -> None:
         return None
 
-    def create_task(self) -> None:
+    def create_task(self) -> Union[Response, dict]:
         self.logger.info('RTM - Created new task')
 
         packet = BasePacket(name="Pick up some milk", tags=[
