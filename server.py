@@ -13,7 +13,7 @@ app.logger.setLevel('DEBUG')
 github = GithubWebhook(app, app.logger)
 rtmilk = RtmApi(app, app.logger)
 
-github.register(event=None, function=rtmilk.create_task)
+# github.register(event=None, function=rtmilk.create_task)
 
 
 @app.route('/')

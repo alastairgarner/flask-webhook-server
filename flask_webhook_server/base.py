@@ -173,7 +173,7 @@ class BaseWebhook(AbstractWebhook):
                 self.targets[event].append(func)
 
             endpoint = kwargs.pop("endpoint", None)
-            self.app.add_url_rule(rule=rule, endpoint=endpoint, view_func=self.resolve,
+            self.app.add_url_rule(rule=rule, endpoint=endpoint, view_func=self.resolve_thread,
                                   **kwargs)
             return None
 
