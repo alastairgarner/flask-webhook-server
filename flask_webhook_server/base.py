@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from threading import Thread
 from typing import Callable, Optional, Union, Any, Tuple
 
-from flask import Flask, Request, Response
+from flask import Flask, Request, Response, request, copy_current_request_context
 from logging import Logger
 import collections
 
@@ -179,10 +179,12 @@ class BaseWebhook(AbstractWebhook):
 
         return decorator
 
-    def resolve(self, request: Request = None) -> None:
+    def resolve(self) -> None:
+
+        print(request.json)
 
         self.logger.info("Thread started")
-        event, packet = self.parse(request)
+        event, packet = self.parse()
         if event not in self.targets.keys():
             raise Exception()
 
@@ -194,10 +196,14 @@ class BaseWebhook(AbstractWebhook):
         self.logger.info("Thread closing")
         return None
 
-    def resolve_thread(self, request: Request = None) -> Response:
+    def resolve_thread(self) -> Response:
         """Callback from Flask"""
 
-        thread = Thread(target=self.resolve)
+        @copy_current_request_context
+        def ctx_bridge():
+            self.resolve()
+
+        thread = Thread(target=ctx_bridge)
         thread.start()
 
         self.logger.info('Sending response')

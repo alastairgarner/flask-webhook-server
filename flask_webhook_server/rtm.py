@@ -235,6 +235,11 @@ class RtmApi(RtmConnector):
 
         return ' '.join(smart_parts)
 
+    def yeah_boi(self):
+        self.logger.info('Yeah Boi')
+
+        return None
+
 
 class RtmWehook(BaseWebhook):
 

@@ -14,6 +14,8 @@ github = GithubWebhook(app, app.logger)
 rtmilk = RtmApi(app, app.logger)
 
 # github.register(event=None, function=rtmilk.create_task)
+# github.register(event=None, function=rtmilk.yeah_boi)
+github.register(event=None, function=github.print_response)
 
 
 @app.route('/')
@@ -22,7 +24,7 @@ def hello_world():
     return Response('This is the welcome screen', 200)
 
 
-@github.hook('/github')
+@github.hook('/github', methods=['POST', 'GET'])
 def on_github_post():
     app.logger.info('Running the github response')
     return None
