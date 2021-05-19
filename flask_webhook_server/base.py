@@ -199,6 +199,7 @@ class BaseWebhook(AbstractWebhook):
     def resolve_thread(self) -> Response:
         """Callback from Flask"""
 
+        # https://stackoverflow.com/questions/50600886/flask-start-new-thread-runtimeerror-working-outside-of-request-context
         @copy_current_request_context
         def ctx_bridge():
             self.resolve()

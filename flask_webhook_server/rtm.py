@@ -2,11 +2,10 @@ from flask_webhook_server.base import BasePacket
 import os
 from typing import Optional, Union
 import requests
-from requests import Response
 import dotenv
 import hashlib
 
-from flask import Flask
+from flask import Flask, request
 from logging import Logger
 
 from requests.models import Response
@@ -237,6 +236,10 @@ class RtmApi(RtmConnector):
 
     def yeah_boi(self):
         self.logger.info('Yeah Boi')
+
+        event_type = request.headers.get('X-Github-Event')
+        event_action = request.json.get('action')
+        self.logger.info(f"Received github event: {event_type} {event_action}")
 
         return None
 

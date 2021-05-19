@@ -14,8 +14,8 @@ github = GithubWebhook(app, app.logger)
 rtmilk = RtmApi(app, app.logger)
 
 # github.register(event=None, function=rtmilk.create_task)
-# github.register(event=None, function=rtmilk.yeah_boi)
-github.register(event=None, function=github.print_response)
+github.register(event=None, function=rtmilk.yeah_boi)
+# github.register(event=None, function=github.print_response)
 
 
 @app.route('/')
