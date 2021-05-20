@@ -13,8 +13,8 @@ app.logger.setLevel('DEBUG')
 github = GithubWebhook(app, app.logger)
 rtmilk = RtmApi(app, app.logger)
 
-# github.register(event=None, function=rtmilk.create_task)
-github.register(event=None, function=rtmilk.yeah_boi)
+github.register(event=('star', 'created'), function=rtmilk.create_task)
+github.register(event=('star', 'created'), function=rtmilk.yeah_boi)
 # github.register(event=None, function=github.print_response)
 
 
@@ -25,8 +25,8 @@ def hello_world():
 
 
 @github.hook('/github', methods=['POST', 'GET'])
-def on_github_post():
-    app.logger.info('Running the github response')
+def on_github_post(packet):
+    # app.logger.info('Running the github response')
     return None
 
 

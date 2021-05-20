@@ -181,8 +181,6 @@ class BaseWebhook(AbstractWebhook):
 
     def resolve(self) -> None:
 
-        print(request.json)
-
         self.logger.info("Thread started")
         event, packet = self.parse()
         if event not in self.targets.keys():
@@ -207,7 +205,7 @@ class BaseWebhook(AbstractWebhook):
         thread = Thread(target=ctx_bridge)
         thread.start()
 
-        self.logger.info('Sending response')
+        self.logger.info('Sending response: 200')
         return Response("This is final response", status=200)
 
     def register(self, event: str = None, function: Callable = None) -> None:

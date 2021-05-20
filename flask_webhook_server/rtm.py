@@ -194,11 +194,8 @@ class RtmApi(RtmConnector):
     def get_tasks(self) -> None:
         return None
 
-    def create_task(self) -> Union[Response, dict]:
-        self.logger.info('RTM - Created new task')
+    def create_task(self, packet: BasePacket) -> Union[Response, dict]:
 
-        packet = BasePacket(name="Pick up some milk", tags=[
-                            "home", "weekend"], priority="1", url="")
         assert packet.name
 
         task = {}
@@ -210,7 +207,10 @@ class RtmApi(RtmConnector):
             "parse": "1"
         }
 
-        return self.post("rtm.tasks.add", data)
+        req = self.post("rtm.tasks.add", data)
+        self.logger.info(f"Created new task: {data['name']}")
+
+        return req
 
     def create_smart_string(self, data: dict) -> str:
 
@@ -234,12 +234,8 @@ class RtmApi(RtmConnector):
 
         return ' '.join(smart_parts)
 
-    def yeah_boi(self):
-        self.logger.info('Yeah Boi')
-
-        event_type = request.headers.get('X-Github-Event')
-        event_action = request.json.get('action')
-        self.logger.info(f"Received github event: {event_type} {event_action}")
+    def yeah_boi(self, packet):
+        self.logger.info(f"I just received a 'star creation' event - YEAH BOI")
 
         return None
 
