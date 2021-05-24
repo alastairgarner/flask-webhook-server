@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import os
-from flask import Flask, Response
+from flask import Flask, Response, request
 
 from flask_webhook_server import BaseWebhook, GithubWebhook, RtmApi, BasePacket
 import dotenv
@@ -27,8 +27,12 @@ def hello_world():
 
 
 @github.hook('/github', methods=['POST', 'GET'])
-def on_github_post(packet):
-    # app.logger.info('Running the github response')
+def on_github_post():
+    head = request.headers
+    data = request.json
+    app.logger.info(
+        f"Teardown function following event '{head['X-Github-Event']} {data['action']}'")
+
     return None
 
 

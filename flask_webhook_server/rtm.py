@@ -242,9 +242,9 @@ class RtmApi(RtmConnector):
 
 class RtmWehook(BaseWebhook):
 
-    events: dict = {
-        'on_post': []
-    }
+    events: list = [
+        'on_post'
+    ]
 
     def __init__(self, app: Flask, logger: Logger):
         super().__init__(app=app, logger=logger)

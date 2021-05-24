@@ -6,11 +6,11 @@ from logging import Logger
 
 class GithubWebhook(BaseWebhook):
 
-    events = {
-        None: [],
-        ('star', 'created'): [],
-        ('star', 'deleted'): []
-    }
+    events: list = [
+        None,
+        ('star', 'created'),
+        ('star', 'deleted'),
+    ]
 
     def __init__(self, app: Flask, logger: Logger):
         super().__init__(app=app, logger=logger)
@@ -38,10 +38,11 @@ class GithubWebhook(BaseWebhook):
         if event not in self.targets.keys():
             return None
 
-        i = 0
-        for pipe in self.targets[event]:
-            pipe(packet)
-            i += 1
+        for target in self.targets[event]:
+            target(packet)
+
+        for closer in self.closers[event]:
+            closer()
 
         self.logger.info("Thread closing")
         return None

@@ -147,10 +147,10 @@ class BaseWebhook(AbstractWebhook):
     # https://github.com/bloomberg/python-github-webhook/blob/master/github_webhook/webhook.py
 
     __name__: str = "BaseWebhook"
-    events: dict = {
-        None: [],
-        'tagged': []
-    }
+    events: list = [
+        None,
+        'tagged'
+    ]
 
     def __init__(self, app: Flask, logger: Logger = None) -> None:
         self.app = app
@@ -159,8 +159,8 @@ class BaseWebhook(AbstractWebhook):
             logger = app.logger
         self.logger = logger
 
-        self.targets: dict = {**self.events}
-        self.events[None].append(self.yeah_boi)
+        self.targets: dict = dict([(evnt, []) for evnt in self.events])
+        self.closers: dict = dict([(evnt, []) for evnt in self.events])
 
     def hook(self, rule: str, **kwargs: Any) -> Callable:
         """
@@ -169,8 +169,8 @@ class BaseWebhook(AbstractWebhook):
 
         def decorator(func: Callable) -> None:
             self.logger.info(f"{self.__name__}: Registered endpoint - {rule}")
-            for event in self.targets.keys():
-                self.targets[event].append(func)
+            for event in self.closers.keys():
+                self.closers[event].append(func)
 
             endpoint = kwargs.pop("endpoint", None)
             self.app.add_url_rule(rule=rule, endpoint=endpoint, view_func=self.resolve_thread,
@@ -186,10 +186,11 @@ class BaseWebhook(AbstractWebhook):
         if event not in self.targets.keys():
             raise Exception()
 
-        i = 0
-        for pipe in self.targets[event]:
-            pipe()
-            i += 1
+        for target in self.targets[event]:
+            target(packet)
+
+        for closer in self.closers[event]:
+            closer()
 
         self.logger.info("Thread closing")
         return None
@@ -217,11 +218,6 @@ class BaseWebhook(AbstractWebhook):
         self.targets[event].append(function)
         return None
 
-    def parse(self, request: Request = None) -> Tuple[Optional[str], Optional[str]]:
+    def parse(self, request: Request = None) -> BasePacket:
 
         return None, None
-
-    def yeah_boi(self):
-        self.logger.info('Yeah Boi')
-
-        return None
