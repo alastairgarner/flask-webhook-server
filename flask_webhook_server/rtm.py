@@ -204,7 +204,7 @@ class RtmApi(RtmConnector):
 
         data = {
             "name": self.create_smart_string(task),
-            "parse": "1"
+            "parse": "1"  # use smart string parser
         }
 
         req = self.post("rtm.tasks.add", data)

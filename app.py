@@ -18,6 +18,10 @@ github = GithubWebhook(app, app.logger)
 rtmilk = RtmApi(app, app.logger)
 
 github.register(event=('star', 'created'), function=rtmilk.yeah_boi)
+github.register(event=('pull_request', 'review_requested'),
+                function=rtmilk.yeah_boi)
+github.register(event=('pull_request', 'review_requested'),
+                function=rtmilk.create_task)
 
 
 @app.route('/')

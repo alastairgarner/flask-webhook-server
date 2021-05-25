@@ -1,6 +1,6 @@
 import os
 import dotenv
-from rtmapi import Rtm
+from rtmcopy import Rtm
 
 RTMMethods = {
     "get_subscriptions": "rtm.push.getSubscriptions",

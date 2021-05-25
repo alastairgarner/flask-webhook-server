@@ -10,6 +10,8 @@ class GithubWebhook(BaseWebhook):
         None,
         ('star', 'created'),
         ('star', 'deleted'),
+        ('pull_request', 'review_requested'),
+        ('pull_request_review_comment', 'created'),
     ]
 
     def __init__(self, app: Flask, logger: Logger):
@@ -20,6 +22,7 @@ class GithubWebhook(BaseWebhook):
         parsers = {
             None: lambda x: x,
             'star': self._parse_star,
+            'pull_request': self._parse_pull_request,
         }
 
         if event_type not in parsers.keys():
@@ -71,6 +74,19 @@ class GithubWebhook(BaseWebhook):
             'tags': ['github'],
             # 'location': "",
             # 'people': [],
+            'priority': "1"
+        }
+
+        return BasePacket(**payload)
+
+    def _parse_pull_request(self) -> BasePacket:
+
+        head = request.headers
+        data = request.json
+        payload = {
+            'name': f"Review {data['repository']['name']} PR {data['number']} - {data['sender']['login']}",
+            'url': f"{data['pull_request'][['url']]}",
+            'tags': ['github'],
             'priority': "1"
         }
 
