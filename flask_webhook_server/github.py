@@ -11,7 +11,10 @@ class GithubWebhook(BaseWebhook):
         ('star', 'created'),
         ('star', 'deleted'),
         ('pull_request', 'review_requested'),
-        ('pull_request_review_comment', 'created'),
+        ('pull_request', 'opened'),
+        ('pull_request', 'reopened'),
+        ('pull_request', 'assigned'),
+        ('pull_request', 'unassigned'),
     ]
 
     def __init__(self, app: Flask, logger: Logger):
@@ -34,8 +37,11 @@ class GithubWebhook(BaseWebhook):
 
         self.logger.info("Thread started")
 
-        event = self.get_event_name()
-        self.logger.info(f'Received event: {event}')
+        try:
+            event = self.get_event_name()
+            self.logger.info(f'Received event: {event}')
+        except:
+            print(request.json)
 
         packet = self.parse(event[0])
         if event not in self.targets.keys():
@@ -53,13 +59,10 @@ class GithubWebhook(BaseWebhook):
     def get_event_name(self):
 
         event_type = request.headers.get('X-Github-Event', None)
-        event_action = request.json.get('action', None)
+        # event_action = request.json.get('action', None)
+        event_action = request.json['action']
 
         return (event_type, event_action)
-
-    def print_response(self):
-        # print('yeah boiiiiii')
-        return None
 
     def _parse_star(self) -> BasePacket:
 
@@ -85,7 +88,7 @@ class GithubWebhook(BaseWebhook):
         data = request.json
         payload = {
             'name': f"Review {data['repository']['name']} PR {data['number']} - {data['sender']['login']}",
-            'url': f"{data['pull_request'][['url']]}",
+            'url': f"{data['pull_request']['url']}",
             'tags': ['github'],
             'priority': "1"
         }

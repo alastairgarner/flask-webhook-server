@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
 from threading import Thread
 from typing import Callable, Optional, Union, Any, Tuple
+import time
+import gevent
 
-from flask import Flask, Request, Response, request, copy_current_request_context
+from flask import Flask, Request, Response, ctx, request, copy_current_request_context
 from logging import Logger
 import collections
 
@@ -199,23 +201,31 @@ class BaseWebhook(AbstractWebhook):
         """Callback from Flask"""
 
         # https://stackoverflow.com/questions/50600886/flask-start-new-thread-runtimeerror-working-outside-of-request-context
-        @copy_current_request_context
-        def ctx_bridge():
-            self.resolve()
+        # @copy_current_request_context
+        # def ctx_bridge():
+        #     self.resolve()
 
-        thread = Thread(target=ctx_bridge)
-        thread.start()
+        # gevent.spawn(ctx_bridge)
+        # thread = Thread(target=ctx_bridge)
+        # thread.start()
+
+        self.resolve()
 
         self.logger.info('Sending response: 200')
         return Response("This is final response", status=200)
 
-    def register(self, event: str = None, function: Callable = None) -> None:
+    def register(self, event: str = None, function: Union[Callable, list] = []) -> None:
         """Register a downstream function"""
 
         if event not in self.targets.keys():
             raise Exception()
 
-        self.targets[event].append(function)
+        if isinstance(function, Callable):
+            function = [function]
+
+        for func in function:
+            self.targets[event].append(func)
+
         return None
 
     def parse(self, request: Request = None) -> BasePacket:

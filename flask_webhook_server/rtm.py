@@ -234,6 +234,9 @@ class RtmApi(RtmConnector):
 
         return ' '.join(smart_parts)
 
+    def print_response(self, packet):
+        self.logger.info(f"Received packet: {packet.name}")
+
     def yeah_boi(self, packet):
         self.logger.info(f"I just received a 'star creation' event - YEAH BOI")
 
